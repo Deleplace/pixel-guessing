@@ -1,0 +1,58 @@
+ul.samples > li {
+    display: inline-block;
+    padding-top: 0.1em;
+    padding-right: 0.4em;
+    padding-bottom: 0.4em;
+    padding-left: 0.1em;
+}
+
+ul.samples > li > img {
+    max-width: 100px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    border-radius: 0.6em;
+    cursor: pointer;
+    /* transparent border placeholder, to avoid layout shift */
+    border: 6px solid #0000;
+}
+
+ul.samples > li > img.selected {
+    border: 6px solid #dd1;
+}
+
+.intro {
+    margin: 1em;
+    font-style: italic;
+}
+
+th.prompt {
+    font-style: italic;
+    font-weight: bold;
+}
+
+.loading {
+    color: #AAA;
+    font-style: italic;
+    font-weight: bold;
+}
+
+#aiconversation td {
+    padding: 1em;
+}
+
+.resolution {
+    display: block;
+    font-size: 0.7em;
+    color: #777;
+}
+
+#aiconversation img {
+    width: 250px;
+    /* pixelated rendering is more relevant here than blurry rendering */
+    image-rendering: pixelated;
+}
+
+.error {
+    color: #B00;
+}
