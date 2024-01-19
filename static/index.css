@@ -35,6 +35,11 @@ th.prompt {
     color: #AAA;
     font-style: italic;
     font-weight: bold;
+    margin-bottom: 1em;
+}
+
+#aiconversation {
+    margin-top: 1em;
 }
 
 #aiconversation td {

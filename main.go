@@ -15,9 +15,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -59,7 +61,36 @@ func main() {
 }
 
 func userPictureUpload(w http.ResponseWriter, r *http.Request) {
-	// TODO ingest file, return list of endpoints to be called?
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "unable to read request body", http.StatusBadRequest)
+		log.Println("Receiving user picture:", err)
+		return
+	}
+
+	r.Body.Close()
+	log.Println("Receiving user picture of size", len(data))
+	buffer := bytes.NewBuffer(data)
+	img, _, err := image.Decode(buffer)
+	if err != nil {
+		log.Println("decoding user provided image:", err)
+		http.Error(w, "we're very sorry, but we were unable to decode this image :(", http.StatusBadRequest)
+		return
+	}
+	imgID := save(img)
+	// Image ID + original width is enough info for the webpage to then call
+	// /resized?imgid=abcd&pixelwidth=8
+	// /guess?imgid=abcd&pixelwidth=8
+	// /resized?imgid=abcd&pixelwidth=10
+	// /guess?imgid=abcd&pixelwidth=10
+	// etc.
+	// etc.
+	response := Response{
+		"imageID": imgID,
+		"width":   img.Bounds().Max.X,
+		"height":  img.Bounds().Max.Y,
+	}
+	fmt.Fprint(w, response)
 }
 
 func resized(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +126,7 @@ func extractResized(w http.ResponseWriter, r *http.Request) image.Image {
 			http.Error(w, "ratio must be between 0.0 and 1.0", http.StatusBadRequest)
 			return nil
 		}
-		log.Println("Resizing", sample, "with ratio", ratio)
+		log.Println("Resizing with ratio", ratio)
 	}
 
 	var fullImg image.Image
@@ -113,10 +144,14 @@ func extractResized(w http.ResponseWriter, r *http.Request) image.Image {
 			return nil
 		}
 	}
-	if picID := r.FormValue("picID"); picID != "" {
+	if imgID := r.FormValue("imgid"); imgID != "" {
 		// Referencing a picture already uploaded by the user
-		log.Println("Resizing picture", picID, "with ratio", ratio)
-		// TODO
+		log.Println("Resizing picture", imgID)
+		fullImg = load(imgID)
+		if fullImg == nil {
+			http.Error(w, "no such image: "+imgID, http.StatusBadRequest)
+			return nil
+		}
 	}
 
 	if pixelWidthStr != "" {
@@ -126,7 +161,7 @@ func extractResized(w http.ResponseWriter, r *http.Request) image.Image {
 			return nil
 		}
 		ratio = float32(newWidth) / float32(fullImg.Bounds().Max.X)
-		log.Println("Resizing", sample, "with width", newWidth, " => ratio", ratio)
+		log.Println("Resizing with width", newWidth, " => ratio", ratio)
 	}
 
 	resizedImg := resizeRatio(fullImg, ratio)

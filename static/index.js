@@ -33,7 +33,8 @@ function startGuessingSample(sample, naturalWidth) {
                     <img src="/resized?sample=${sample}&pixelwidth=${w}" id="resized-${i}" />
                 </td>
                 <td class="answer" id="answer-${i}">
-                    <span class="loading">Let me guess...</span>
+                    <div class="loading">Let me guess... </div>
+                    <div class="loading">(asking the Gemini Pro Vision model with Vertex AI)</div>
                 </td>
             `;
             aiconversation.appendChild(row);
@@ -49,6 +50,49 @@ function startGuessingSample(sample, naturalWidth) {
     }
 }
 
+
+// Call startGuessingUserImage() after successful upload
+// This is mostly the same code as startGuessingSample, but using the image ID
+// of a recently uploaded user image.
+// TODO merge this code with startGuessingSample ?
+function startGuessingUserImage(imageID, naturalWidth) {
+    console.log("Start guessing", imageID, "having original width", naturalWidth);
+    aiconversation.innerHTML = `
+        <tr>
+            <th> </th>
+            <th class="prompt">
+                What does this picture look like? Provide a short answer in less than 8 words.
+            </th>
+        </tr>
+        `;
+    let i = 0;
+    for(let pixelW=8; pixelW<=naturalWidth; pixelW*=1.3) {
+        let w = Math.floor(pixelW);
+        setTimeout((imgID, i) => {
+            let row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <span class="resolution" id="resolution-${i}">${w}</span>
+                    <img src="/resized?imgid=${imgID}&pixelwidth=${w}" id="resized-${i}" />
+                </td>
+                <td class="answer" id="answer-${i}">
+                    <div class="loading">Let me guess... </div>
+                    <div class="loading">(asking the Gemini Pro Vision model with Vertex AI)</div>
+                </td>
+            `;
+            aiconversation.appendChild(row);
+            let img = document.getElementById(`resized-${i}`);
+            let resolution = document.getElementById(`resolution-${i}`);
+            img.onload = () => {
+                // When the pixelated image arrives, show its resolution w x h (in pixels)
+                resolution.innerHTML = `${img.naturalWidth}x${img.naturalHeight}`;
+            };
+            guessSingle(`/guess?imgid=${imageID}&pixelwidth=${w}`, i);
+        }, 2000 * i, imageID, i);
+        i++;
+    }
+}
+
 function guessSingle(endpoint, i) {
     fetch(endpoint)
     .then(response => {
@@ -60,8 +104,8 @@ function guessSingle(endpoint, i) {
     .then(data => {
         document.getElementById(`answer-${i}`).innerHTML = data.answer;
     })
-    .catch(data => {
-        document.getElementById(`answer-${i}`).innerHTML = `<span class="error">${data}</span>`;
+    .catch(err => {
+        document.getElementById(`answer-${i}`).innerHTML = `<span class="error">${err}</span>`;
     });
 }
 
@@ -99,6 +143,31 @@ function selectRandomImages(n, m) {
         samples.appendChild(li);
     }
 }
+
+up.addEventListener('change', () => {
+    let file = up.files[0];
+    fetch('/upload', {
+        method: 'POST',
+        body: file
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("HTTP error " + response.status + ": " + response.text());
+        }
+        return response.json();
+    })
+    .then(data => {
+        startGuessingUserImage(data.imageID, data.width);
+    })
+    .catch(err => {
+        // TODO
+        console.error(err);
+    });
+});
+
+//
+// Page init:
+//
 
 selectRandomImages(30, 8);
 
