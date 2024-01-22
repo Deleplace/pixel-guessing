@@ -10,6 +10,8 @@ type imgID string
 
 var userImages = map[imgID]image.Image{}
 
+// In this sample app, we don't wish to save many user images in memory.
+// When maxImg will be reached, we'll remove 1 older image.
 const maxImg = 8
 
 func save(img image.Image) imgID {
@@ -24,11 +26,13 @@ func save(img image.Image) imgID {
 
 func load(id string) image.Image {
 	img := userImages[imgID(id)]
-	log.Println("Found stored image", id)
+	if img == nil {
+		log.Println("Could not find stored image", id)
+	} else {
+		log.Println("Found stored image", id)
+	}
 	return img
 }
-
-// Not crypto secure — it's fine
 
 const alphanum = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 
@@ -44,6 +48,7 @@ func randomImgID() imgID {
 
 func deleteOneUserImage() {
 	for id := range userImages {
+		log.Println("Deleting stored image", id)
 		delete(userImages, id)
 		return
 	}

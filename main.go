@@ -184,6 +184,7 @@ func guessHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error accessing Vertex AI", http.StatusInternalServerError)
 		return
 	}
+	fmt.Printf("Guessed: %q", answer)
 
 	w.Header().Set("Content-Type", "text/json")
 	response := Response{
