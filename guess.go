@@ -39,7 +39,9 @@ func guess(ctx context.Context, jpegData []byte) (genai.Part, error) {
 	// "rpc error: code = InvalidArgument desc = Request contains an invalid argument"
 	for attempt := 1; attempt <= 3; attempt++ {
 		img := genai.ImageData("jpeg", jpegData)
+		tip := time.Now()
 		res, err := model.GenerateContent(ctx, img, genai.Text(prompt))
+		log.Printf("GenerateContent took %dms", time.Since(tip).Milliseconds())
 		if err != nil {
 			log.Printf("Error calling GenerateContent: %v", err)
 			if attempt == 3 {
