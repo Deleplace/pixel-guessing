@@ -4,6 +4,7 @@ import (
 	"image"
 	"log"
 	"math/rand"
+	"runtime"
 )
 
 type imgID string
@@ -12,7 +13,7 @@ var userImages = map[imgID]image.Image{}
 
 // In this sample app, we don't wish to save many user images in memory.
 // When maxImg will be reached, we'll remove 1 older image.
-const maxImg = 8
+const maxImg = 20
 
 func save(img image.Image) imgID {
 	for len(userImages) >= maxImg {
@@ -21,6 +22,8 @@ func save(img image.Image) imgID {
 
 	id := randomImgID()
 	userImages[id] = img
+	log.Println("Storing image", id)
+	printMemoryUsage()
 	return id
 }
 
@@ -50,6 +53,19 @@ func deleteOneUserImage() {
 	for id := range userImages {
 		log.Println("Deleting stored image", id)
 		delete(userImages, id)
+		printMemoryUsage()
 		return
 	}
+}
+
+func printMemoryUsage() {
+	// We're letting the GC do its work.
+	// Not requesting a full GC every time.
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Printf("Mem Alloc = %v MiB", m.Alloc/1024/1024)
+	log.Printf("Mem TotalAlloc = %v MiB", m.TotalAlloc/1024/1024)
+	log.Printf("Mem Sys = %v MiB", m.Sys/1024/1024)
+	log.Printf("Mem NumGC = %v\n", m.NumGC)
+
 }
